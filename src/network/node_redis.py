@@ -4,6 +4,10 @@ import redis.asyncio as redis
 import json
 import time
 from src.utils.logger import setup_logger
+from dotenv import load_dotenv
+from dotenv import find_dotenv
+
+load_dotenv(find_dotenv())
 
 class RedisNode:
     def __init__(self, node_id, neighbors, routing_algorithm):

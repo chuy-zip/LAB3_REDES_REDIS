@@ -7,7 +7,7 @@ from src.algorithms.flooding import Flooding
 
 async def main():
     parser = argparse.ArgumentParser(description='Nodo de red con Redis')
-    parser.add_argument('node_id', help='ID del nodo (ej: nodo0, nodo1)')
+    parser.add_argument('node_id', help='ID del nodo (ej: N1, N2)')
     parser.add_argument('--algorithm', '-a', default='flooding', 
                         choices=['flooding', 'dijkstra', 'lsr', 'dvr'],
                         help='Algoritmo de enrutamiento a usar')
