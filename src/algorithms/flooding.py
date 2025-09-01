@@ -12,11 +12,11 @@ class Flooding:
 
     def handle_message(self, message):
         # Crear ID único para el mensaje
-        message_id = f"{message.get('from', '')}_{message.get('timestamp', 0)}"
-        
+        message_id = f"{message.get('from', '')}_{message.get('to', '')}_{message.get('payload', '')}_{message.get('timestamp', 0)}"
+    
         # Verificar si ya se vio este mensaje
         if message_id in self.seen_messages:
-            self.node.logger.debug(f"Mensaje duplicado: {message_id}")
+            self.node.logger.info(f" MENSAJE DUPLICADO, IGNORADO: {message.get('payload')}")
             return
         
         self.seen_messages.add(message_id)
@@ -31,7 +31,7 @@ class Flooding:
         
         # Verificar si es para este nodo
         if message.get('to') == self.node.node_id:
-            self.node.logger.info(f"MENSAJE RECIBIDO: {message.get('payload')}")
+            self.node.logger.info(f"MENSAJE RECIBIDO, LLEGO AL DESTINO: {message.get('payload')}")
         else:
             # Reenviar a todos los vecinos excepto al remitente
             asyncio.create_task(
