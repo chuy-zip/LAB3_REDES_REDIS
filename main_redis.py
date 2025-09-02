@@ -4,6 +4,7 @@ import argparse
 from src.utils.config_loader import load_config, get_node_addresses, get_neighbors
 from src.network.node_redis import RedisNode
 from src.algorithms.flooding import Flooding
+from src.algorithms.dijkstra import Dijkstra
 
 async def main():
     parser = argparse.ArgumentParser(description='Nodo de red con Redis')
@@ -29,15 +30,30 @@ async def main():
     # Crear algoritmo de routing
     if algorithm_name == 'flooding':
         routing_algorithm = Flooding()
+    elif algorithm_name == 'dijkstra':
+        routing_algorithm = Dijkstra()
+        # Para Dijkstra, cargamos la topología completa
+        routing_algorithm.build_topology_from_config(topo_config)
     else:
         print(f"Algoritmo {algorithm_name} no implementado aún, usando flooding")
         routing_algorithm = Flooding()
     
-    # Crear e iniciar el nodo
+    # Crear el nodo
     node = RedisNode(node_id, list(neighbors.keys()), routing_algorithm)
+    
+    # PARA DIJKSTRA: Ahora que el algoritmo tiene referencia al nodo (seteada en RedisNode.__init__),
+    # podemos calcular las rutas
+    if algorithm_name == 'dijkstra':
+        routing_algorithm.calculate_routes()
     
     try:
         await node.start()
+        print(f"Nodo {node_id} iniciado. Vecinos: {list(neighbors.keys())}")
+        
+        # Mantener el nodo corriendo
+        while node.running:
+            await asyncio.sleep(1)
+            
     except KeyboardInterrupt:
         print("Interrupción recibida, cerrando nodo")
     except Exception as e:
