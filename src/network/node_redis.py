@@ -77,7 +77,11 @@ class RedisNode:
                             self.logger.info(f"Mensaje recibido: {message_data}")
                             
                             # Procesar con el algoritmo de routing
-                            self.routing_algorithm.handle_message(message_data)
+                            if hasattr(self.routing_algorithm, 'handle_message_async'):
+                                await self.routing_algorithm.handle_message_async(message_data)
+                            else:
+                                # Fallback al método síncrono
+                                self.routing_algorithm.handle_message(message_data)
                             
                         except json.JSONDecodeError:
                             self.logger.error("Mensaje JSON mal formado")
