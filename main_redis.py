@@ -5,6 +5,7 @@ from src.utils.config_loader import load_config, get_node_addresses, get_neighbo
 from src.network.node_redis import RedisNode
 from src.algorithms.flooding import Flooding
 from src.algorithms.dijkstra import Dijkstra
+from src.algorithms.link_state import LinkStateRouter
 
 async def main():
     parser = argparse.ArgumentParser(description='Nodo de red con Redis')
@@ -30,6 +31,10 @@ async def main():
     # Crear algoritmo de routing
     if algorithm_name == 'flooding':
         routing_algorithm = Flooding()
+    elif algorithm_name == 'lsr':
+        routing_algorithm = LinkStateRouter()
+        dijkstra = Dijkstra()
+        routing_algorithm.topology = dijkstra.build_topology_from_config(topo_config)
     elif algorithm_name == 'dijkstra':
         routing_algorithm = Dijkstra()
         # Para Dijkstra, cargamos la topología completa
