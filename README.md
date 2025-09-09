@@ -24,15 +24,15 @@ python test_send.py
 ## Probar con test_network.py
 Levanta todos los nodos de la topología por separado para poder hacer pruebas.
 
-#### Usar flooding (por defecto)
-python tests/run_redis_network.py
+### Usar flooding (por defecto)
+python test_network.py
 
-#### Usar dijkstra
-python tests/run_redis_network.py --algorithm dijkstra
+### Usar dijkstra
+python test_network.py --algorithm dijkstra
 
-#### Usar forma abreviada
-python tests/run_redis_network.py -a lsr
+### Usar forma abreviada
+python test_network.py -a lsr
 
-#### Usar distance vector
-python tests/run_redis_network.py --algorithm flooding
+### Usar distance vector
+python test_network.py --algorithm flooding
 
