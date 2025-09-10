@@ -1,4 +1,5 @@
 import heapq
+import asyncio
 import time
 from src.utils.logger import setup_logger
 from src.algorithms.dijkstra import Dijkstra
@@ -16,7 +17,7 @@ class LinkStateRouter:
     def set_node(self, node):
         self.node = node
 
-    def send_lsa(self):
+    async def send_lsa(self):
         """Enviar LSA de este nodo a todos los vecinos"""
         lsa = {
             "type": "lsa",
@@ -26,20 +27,22 @@ class LinkStateRouter:
             "id": f"{self.node.node_id}_{int(time.time())}"
         }
         self.lsa_seen.add(lsa["id"])
-        self.logger.info(lsa)
-        self.node.flood_message(lsa)
+        self.logger.info(f"Enviando LSA: {lsa}")
+        await self.node.flood_message(lsa)
 
-    def handle_message(self, message):
+    async def handle_message_async(self, message):
+        """Maneja los mensajes recibidos según su tipo"""
         msg_type = message.get("type", "")
 
         if msg_type == "lsa":
-            self.handle_lsa(message)
+            await self.handle_lsa(message)
         elif msg_type == "message":
-            self.handle_forwarding(message)
+            await self.handle_forwarding(message)
         else:
             self.node.logger.debug(f"Ignorando mensaje de tipo {msg_type}")
 
-    def handle_lsa(self, lsa):
+    async def handle_lsa(self, lsa):
+        """Procesa mensajes de tipo LSA"""
         lsa_id = lsa.get("id")
         if lsa_id in self.lsa_seen:
             return
@@ -52,14 +55,14 @@ class LinkStateRouter:
         self.node.logger.info(f"LSA recibida de {sender}: {neighbors}")
 
         self.calculate_routes()
-        self.node.flood_message(lsa, exclude_neighbor=lsa.get("from"))
+        await self.node.flood_message(lsa, exclude_neighbor=lsa.get("from"))
 
     def calculate_routes(self):
+        """Recalcula la tabla de rutas usando Dijkstra"""
         if not self.topology:
             return
 
         start_node = self.node.node_id
-
         distances = {n: float('inf') for n in self.topology}
         previous = {n: None for n in self.topology}
         distances[start_node] = 0
@@ -107,20 +110,32 @@ class LinkStateRouter:
         self.logger.warning(f"No hay ruta conocida para {destination}")
         return None
 
-    def handle_forwarding(self, message):
+    async def handle_forwarding(self, message):
+        """Encargado de reenviar o entregar mensajes"""
         destination = message.get("to")
         self.calculate_routes()
 
         if destination == self.node.node_id:
-            self.node.logger.info(f"Mensaje recibido: {message.get('payload')}")
+            if message.get("type") != "lsa":
+                self.node.logger.info(f"Mensaje recibido: {message.get('payload')}")
         else:
             next_hop = self.get_next_hop(destination)
             if next_hop:
                 self.node.send_message(message, next_hop)
-                self.node.logger.info(f"Forwardeando mensaje a {next_hop} para {destination}")
+                self.node.logger.info(
+                    f"Forwardeando mensaje a {next_hop} para {destination}"
+                )
             else:
                 self.node.logger.warning(f"No hay ruta para {destination}")
 
-    def start(self):
-        self.send_lsa()
-        self.node.logger.info("Link State Routing iniciado")
+    async def start(self):
+        """Bucle principal del algoritmo LSR"""
+        self.logger.info(self.topology)
+        if self.node:
+            self.logger.info(f"Algoritmo LSR iniciado para nodo {self.node.node_id}")
+        else:
+            self.logger.warning("Algoritmo LSR iniciado sin referencia a nodo")
+
+        while self.running:
+            await self.send_lsa()
+            await asyncio.sleep(360)

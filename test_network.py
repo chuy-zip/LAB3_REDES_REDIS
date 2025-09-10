@@ -61,7 +61,7 @@ class RedisNetworkManager:
                 )
             else:  # Unix/Linux/Mac
                 process = subprocess.Popen(
-                    ['xterm', '-e'] + cmd + [';', 'bash'],
+                    ['xterm', '-hold', '-e'] + cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True

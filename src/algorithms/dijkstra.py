@@ -25,7 +25,9 @@ class Dijkstra:
             self.logger.debug(f"Topología detallada: {self.topology}")
         else:
             self.logger.error("Formato de topología inválido - falta clave 'config'")
-            
+        
+        return self.topology
+    
     def calculate_routes(self):
         # Calcula las rutas más cortas usando Dijkstra
         if not self.topology:
