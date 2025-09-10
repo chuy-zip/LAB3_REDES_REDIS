@@ -37,6 +37,9 @@ class SimpleLSR:
             if self.node.node_id not in self.node.routing_table:
                 self.node.routing_table[self.node.node_id] = {}
                 
+            # Verificar si es una reconexión (nuevo vecino o reconexión)
+            was_reconnection = from_node not in self.node.routing_table[self.node.node_id]
+                
             # Actualizar timer en la tabla de routing
             if from_node in self.node.routing_table[self.node.node_id]:
                 self.node.routing_table[self.node.node_id][from_node]['time'] = 15
@@ -49,11 +52,16 @@ class SimpleLSR:
                 }
                 self.node.logger.info(f"Vecino reconectado: {from_node}")
                 
+            # PROPAGAR INFORMACIÓN SI FUE UNA RECONEXIÓN
+            if was_reconnection:
+                self.node.logger.info(f"Propagando información de reconexión: {from_node}")
+                self._propagate_routing_info()
+                
         except Exception as e:
             self.node.logger.error(f"Error procesando hello: {e}")
 
     def _handle_routing_message(self, message):
-        """Manejar mensajes de routing - actualizar tabla y hacer flooding"""
+        """Manejar mensajes de routing - actualizar tabla"""
         from_node = message['from']
         to_node = message['to']
         hops = message['hops']
@@ -62,22 +70,21 @@ class SimpleLSR:
         message_id = f"{from_node}_{to_node}_{hops}"
         
         if message_id in self.seen_messages:
-            self.node.logger.debug(f"Mensaje duplicado ignorado: {message_id}")
+            self.node.logger.info(f"Mensaje duplicado ignorado: {message_id}")
             return
         
         self.node.logger.info(f"Mensaje obtenido: {message}")
         self.seen_messages.add(message_id)
         
-        # Actualizar tabla de routing
+        # Actualizar tabla de routing SIN timer para conexiones aprendidas
         if from_node not in self.node.routing_table:
             self.node.routing_table[from_node] = {}
         
         self.node.routing_table[from_node][to_node] = {
-            "weight": hops,
-            "time": 10  # Inicializar timer
+            "weight": hops
         }
         
-        self.node.logger.info(f"Tabla actualizada/n: {json.dumps(self.node.routing_table, indent=2)}")
+        self.node.logger.info(f"Tabla actualizada:\n{json.dumps(self.node.routing_table, indent=2)}")
         
         # Hacer flooding a todos los vecinos excepto al remitente
         asyncio.create_task(
@@ -113,45 +120,43 @@ class SimpleLSR:
             self.node.logger.info("SimpleLSR detenido")
 
     def _decrement_timers(self):
-        """Decrementar todos los timers y eliminar nodos inactivos"""
-        nodes_to_remove = []
+        """Decrementar timers solo de vecinos directos"""
+        connections_to_remove = []
         
-        for node, connections in self.node.routing_table.items():
-            connections_to_remove = []
-            
-            for neighbor, data in connections.items():
+        # Solo decrementar timers de vecinos directos (nodo propio)
+        if self.node.node_id in self.node.routing_table:
+            for neighbor, data in self.node.routing_table[self.node.node_id].items():
                 data['time'] -= 1
                 
                 if data['time'] <= 0:
                     connections_to_remove.append(neighbor)
-                    self.node.logger.info(f"Nodo {neighbor} marcado como inactivo")
-            
-            # Eliminar conexiones inactivas
-            for neighbor in connections_to_remove:
-                del connections[neighbor]
-                
-            # Si el nodo no tiene conexiones, marcarlo para remover
-            if not connections:
-                nodes_to_remove.append(node)
+                    self.node.logger.info(f"Vecino directo {neighbor} marcado como inactivo")
         
-        # Eliminar nodos sin conexiones
-        for node in nodes_to_remove:
-            del self.node.routing_table[node]
-            
-        # Si hay cambios, propagar la información actualizada
-        if nodes_to_remove:
+        # Eliminar conexiones inactivas
+        for neighbor in connections_to_remove:
+            del self.node.routing_table[self.node.node_id][neighbor]
+        
+        # Si hay cambios en vecinos directos, propagar la información
+        if connections_to_remove:
+            self.node.logger.info(f"Propagando cambios por vecinos eliminados: {connections_to_remove}")
             self._propagate_routing_info()
 
     def _propagate_routing_info(self):
         """Propagar información de routing a vecinos"""
+        # Verificar que tenemos vecinos directos
+        if self.node.node_id not in self.node.routing_table:
+            return
+            
         # Para cada conexión directa de este nodo
-        for neighbor, data in self.node.routing_table.get(self.node.node_id, {}).items():
+        for neighbor, data in self.node.routing_table[self.node.node_id].items():
             message = {
                 "type": "message",
                 "from": self.node.node_id,
                 "to": neighbor,
                 "hops": data['weight']
             }
+            # ✅ Agregar logging para debugging
+            self.node.logger.info(f"Propagando: {self.node.node_id} -> {neighbor} (peso: {data['weight']})")
             asyncio.create_task(self.node.send_message(message, neighbor))
 
     def shutdown(self):
