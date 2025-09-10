@@ -1,0 +1,16 @@
+{
+  "type": "topo",
+  "config": {
+    "sec30.grupo1.nodo1": {"sec30.grupo11.nodo11": 12, "sec30.grupo7.nodo7": 4},
+    "sec30.grupo2.nodo2": {"sec30.grupo10.nodo10": 14, "sec30.grupo3.nodo3": 10, "sec30.grupo4.nodo4": 17},
+    "sec30.grupo3.nodo3": {"sec30.grupo2.nodo2": 10, "sec30.grupo5.nodo5": 14, "sec30.grupo8.nodo8": 15},
+    "sec30.grupo4.nodo4": {"sec30.grupo2.nodo2": 17, "sec30.grupo8.nodo8": 8, "sec30.grupo9.nodo9": 8},
+    "sec30.grupo5.nodo5": {"sec30.grupo3.nodo3": 14, "sec30.grupo7.nodo7": 11, "sec30.grupo9.nodo9": 10},
+    "sec30.grupo6.nodo6": {"sec30.grupo10.nodo10": 15, "sec30.grupo11.nodo11": 5},
+    "sec30.grupo7.nodo7": {"sec30.grupo1.nodo1": 4, "sec30.grupo10.nodo10": 3, "sec30.grupo11.nodo11": 11, "sec30.grupo5.nodo5": 11, "sec30.grupo8.nodo8": 7},
+    "sec30.grupo8.nodo8": {"sec30.grupo10.nodo10": 6, "sec30.grupo11.nodo11": 16, "sec30.grupo3.nodo3": 15, "sec30.grupo4.nodo4": 8, "sec30.grupo7.nodo7": 7},
+    "sec30.grupo9.nodo9": {"sec30.grupo4.nodo4": 8, "sec30.grupo5.nodo5": 10},
+    "sec30.grupo10.nodo10": {"sec30.grupo11.nodo11": 16, "sec30.grupo2.nodo2": 14, "sec30.grupo6.nodo6": 15, "sec30.grupo7.nodo7": 3, "sec30.grupo8.nodo8": 6},
+    "sec30.grupo11.nodo11": {"sec30.grupo1.nodo1": 12, "sec30.grupo10.nodo10": 16, "sec30.grupo6.nodo6": 5, "sec30.grupo7.nodo7": 11, "sec30.grupo8.nodo8": 16}
+  }
+}
