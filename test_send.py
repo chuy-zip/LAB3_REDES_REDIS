@@ -18,17 +18,17 @@ async def send_test_message():
     message = {
         "proto": "flooding",
         "type": "message",
-        "from": "TEST",
-        "to": "N1",  # Destino
+        "from": "nodo5",
+        "to": "nodo8",  # Destino
         "ttl": 10,
         "headers": [],
         "payload": "Mensaje de prueba manual",
         "timestamp": 1234567890
     }
     
-    # Publicar en canal de N1
-    await r.publish("sec30.grupo5.N5", json.dumps(message))
-    print("Mensaje enviado a N1")
+    # Publicar en canal de nodo5
+    await r.publish("sec30.grupo5.nodo5", json.dumps(message))
+    print("Mensaje enviado a nodo5")
     await r.close()
 
 asyncio.run(send_test_message())

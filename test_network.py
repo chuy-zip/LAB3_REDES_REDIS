@@ -179,18 +179,17 @@ async def main():
             print("\n")
             print(f"Algoritmo: {args.algorithm}")
             print("1. Enviar mensaje de prueba")
-            print("2. Mostrar estado de todos los nodos")
-            print("3. Mostrar topología de la red")
-            print("4. Reiniciar con diferente algoritmo")
-            print("5. Salir y detener todos los nodos")
+            print("2. Mostrar topología de la red")
+            print("3. Reiniciar con diferente algoritmo")
+            print("4. Salir y detener todos los nodos")
             print("\n")
             
-            choice = input("Selecciona una opción (1-5): ").strip()
+            choice = input("Selecciona una opción (1-4): ").strip()
             
             if choice == '1':
                 print("\n--- ENVIAR MENSAJE ---")
-                from_node = input("Nodo origen (ej: N1): ").strip().upper()
-                to_node = input("Nodo destino (ej: N5): ").strip().upper()
+                from_node = input("Nodo origen (ej: nodo1): ").strip()
+                to_node = input("Nodo destino (ej: nodo5): ").strip()
                 message = input("Mensaje: ").strip()
                 
                 if from_node and to_node and message:

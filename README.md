@@ -11,7 +11,7 @@ pip install dotenv
 ```
 ## Levantar un nodo individual
 ```
-python main_redis.py N1 --algorithm flooding
+python main_redis.py nodo1 --algorithm flooding
 ```
 
 ## mandar un mensaje de prueba
@@ -33,6 +33,6 @@ python test_network.py --algorithm dijkstra
 ### Usar forma abreviada
 python test_network.py -a lsr
 
-### Usar distance vector
+### Usar flooding vector
 python test_network.py --algorithm flooding
 
