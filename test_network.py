@@ -24,7 +24,7 @@ class RedisNetworkManager:
         self.logs = {}
         
         # Cargar configuración
-        self.topo_config = load_config('config/topo-redis.json')
+        self.topo_config = load_config('config/topo-redis-test.json')
         self.all_nodes = list(self.topo_config['config'].keys())
     
     def start_all_nodes(self, algorithm='flooding'):

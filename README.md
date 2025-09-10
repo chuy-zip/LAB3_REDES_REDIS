@@ -11,7 +11,7 @@ pip install dotenv
 ```
 ## Levantar un nodo individual
 ```
-python main_redis.py N1 --algorithm flooding
+python main_redis.py sec30.grupo5.nodo5 --algorithm lsr_simple
 ```
 
 ## mandar un mensaje de prueba

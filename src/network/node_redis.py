@@ -12,25 +12,38 @@ load_dotenv(find_dotenv())
 class RedisNode:
     def __init__(self, node_id, neighbors, routing_algorithm):
         self.node_id = node_id
-        self.neighbors = neighbors  # Lista de IDs de nodos vecinos
+        self.neighbors = neighbors  # Diccionario de {vecino: costo}
         self.routing_algorithm = routing_algorithm
         self.logger = setup_logger(node_id)
         self.running = False
         
         # Configuración de Redis
         self.host = os.getenv("REDIS_HOST", "localhost")
-
-        print(f"El host es: {self.host}")
         self.port = os.getenv("REDIS_PORT", 6379)
         self.password = os.getenv("REDIS_PASSWORD", None)
         
-        # Canal propio del nodo
-        self.my_channel = f"sec30.grupo5.{node_id}"
+        # Canal propio del nodo (usando el nuevo formato)
+        self.my_channel = node_id  # ej: "sec30.grupo1.nodo1"
         
         # Canales a los que suscribirse (vecinos)
-        self.neighbor_channels = [f"sec30.grupo5.{neighbor}" for neighbor in neighbors]
+        self.neighbor_channels = list(neighbors.keys())
+        
+        # Tabla de routing interna (nueva)
+        self.routing_table = {}
+        
+        # Inicializar tabla con vecinos directos
+        self._initialize_routing_table()
         
         self.routing_algorithm.set_node(self)
+    
+    def _initialize_routing_table(self):
+        """Inicializar la tabla de routing con vecinos directos"""
+        self.routing_table[self.node_id] = {}
+        for neighbor, cost in self.neighbors.items():
+            self.routing_table[self.node_id][neighbor] = {
+                "weight": cost,
+                "time": 15  # Valor inicial del timer
+            }
     
     async def connect_redis(self):
         """Conectar a Redis"""
@@ -74,7 +87,7 @@ class RedisNode:
                         # Decodificar mensaje JSON
                         try:
                             message_data = json.loads(message["data"].decode())
-                            self.logger.info(f"Mensaje recibido: {message_data}")
+                            #self.logger.info(f"Mensaje recibido: {message_data}")
                             
                             # Procesar con el algoritmo de routing
                             if hasattr(self.routing_algorithm, 'handle_message_async'):
@@ -85,6 +98,8 @@ class RedisNode:
                             
                         except json.JSONDecodeError:
                             self.logger.error("Mensaje JSON mal formado")
+                        except Exception as e:
+                            self.logger.error(f"Error procesando mensaje: {e}")
                             
                 except Exception as e:
                     self.logger.error(f"Error en listener: {e}")
@@ -93,10 +108,10 @@ class RedisNode:
     async def send_message(self, message, neighbor_id):
         """Enviar mensaje a un vecino específico"""
         try:
-            target_channel = f"sec30.grupo5.{neighbor_id}"
+            target_channel = neighbor_id  # Usar el ID directo del nodo
             message_str = json.dumps(message)
             await self.redis.publish(target_channel, message_str)
-            self.logger.debug(f"Mensaje enviado a {neighbor_id}")
+            self.logger.debug(f"Mensaje enviado a {neighbor_id}: {message}")
             return True
         except Exception as e:
             self.logger.error(f"Error enviando mensaje a {neighbor_id}: {e}")
@@ -110,6 +125,17 @@ class RedisNode:
                 if await self.send_message(message, neighbor_id):
                     sent_count += 1
         return sent_count
+    
+    async def send_hello(self):
+        """Enviar mensajes hello a todos los vecinos"""
+        for neighbor_id in self.neighbors:
+            hello_message = {
+                "type": "hello",
+                "from": self.node_id,
+                "to": neighbor_id,
+                "hops": self.neighbors[neighbor_id]
+            }
+            await self.send_message(hello_message, neighbor_id)
     
     async def start(self):
         """Iniciar el nodo"""

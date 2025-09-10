@@ -6,12 +6,13 @@ from src.network.node_redis import RedisNode
 from src.algorithms.flooding import Flooding
 from src.algorithms.dijkstra import Dijkstra
 from src.algorithms.link_state import LinkStateRouter
+from src.algorithms.simple_slr import SimpleLSR
 
 async def main():
     parser = argparse.ArgumentParser(description='Nodo de red con Redis')
-    parser.add_argument('node_id', help='ID del nodo (ej: N1, N2)')
+    parser.add_argument('node_id', help='ID del nodo (ej: sec30.grupo5.nodo5')
     parser.add_argument('--algorithm', '-a', default='flooding', 
-                        choices=['flooding', 'dijkstra', 'lsr', 'dvr'],
+                        choices=['flooding', 'dijkstra', 'lsr', 'lsr_simple'],
                         help='Algoritmo de enrutamiento a usar')
     
     args = parser.parse_args()
@@ -20,7 +21,7 @@ async def main():
     
     # Cargar configuración
     try:
-        topo_config = load_config('config/topo-redis.json')
+        topo_config = load_config('config/topo-redis-test.json')
     except Exception as e:
         print(f"Error cargando configuración: {e}")
         return
@@ -33,18 +34,18 @@ async def main():
         routing_algorithm = Flooding()
     elif algorithm_name == 'lsr':
         routing_algorithm = LinkStateRouter()
-        dijkstra = Dijkstra()
-        routing_algorithm.topology = dijkstra.build_topology_from_config(topo_config)
+    elif algorithm_name == 'lsr_simple':
+        routing_algorithm = SimpleLSR()  # el nuevo
     elif algorithm_name == 'dijkstra':
         routing_algorithm = Dijkstra()
-        # Para Dijkstra, cargamos la topología completa
         routing_algorithm.build_topology_from_config(topo_config)
     else:
-        print(f"Algoritmo {algorithm_name} no implementado aún, usando flooding")
-        routing_algorithm = Flooding()
-    
+        print(f"Algoritmo {algorithm_name} no implementado aún, usando SimpleLSR")
+        routing_algorithm = SimpleLSR()
+
+    print(f"{neighbors}")
     # Crear el nodo
-    node = RedisNode(node_id, list(neighbors.keys()), routing_algorithm)
+    node = RedisNode(node_id, neighbors, routing_algorithm)
     
     # PARA DIJKSTRA: Ahora que el algoritmo tiene referencia al nodo (seteada en RedisNode.__init__),
     # podemos calcular las rutas
