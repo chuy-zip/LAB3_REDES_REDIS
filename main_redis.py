@@ -37,8 +37,7 @@ async def main():
     elif algorithm_name == 'lsr_simple':
         routing_algorithm = SimpleLSR()  # el nuevo
     elif algorithm_name == 'dijkstra':
-        routing_algorithm = Dijkstra()
-        routing_algorithm.build_topology_from_config(topo_config)
+        routing_algorithm = Dijkstra() 
     else:
         print(f"Algoritmo {algorithm_name} no implementado aún, usando SimpleLSR")
         routing_algorithm = SimpleLSR()
