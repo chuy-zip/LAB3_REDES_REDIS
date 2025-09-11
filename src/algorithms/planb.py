@@ -28,8 +28,8 @@ class SimpleLSR:
             hops = message['hops']
 
             # Solo procesar si es para este nodo
-            #if to_node != self.node.node_id:
-            #    return
+            if to_node != self.node.node_id:
+                return
 
             self.node.logger.info(f"Hello recibido de nodo: {from_node}")
 
@@ -60,12 +60,16 @@ class SimpleLSR:
         except Exception as e:
             self.node.logger.error(f"Error procesando hello: {e}")
 
-
     def _handle_routing_message(self, message):
         """Manejar mensajes de routing - actualizar tabla"""
         from_node = message['from']
         to_node = message['to']
         hops = message['hops']
+
+        # Si hops es None o negativo, significa que el nodo murió
+        if hops is None or hops < 0:
+            self._handle_node_death(from_node, to_node)
+            return
 
         # En vez de solo ignorar por duplicado, verificamos si hay cambio real
         current_weight = (
@@ -99,6 +103,52 @@ class SimpleLSR:
         asyncio.create_task(
             self.node.flood_message(message, exclude_neighbor=from_node)
         )
+
+    def _handle_node_death(self, from_node, dead_node):
+        """Manejar información de que un nodo ha muerto"""
+        self.node.logger.info(f"Recibida información de muerte del nodo: {dead_node} desde {from_node}")
+
+        # Eliminar el nodo muerto de nuestra tabla
+        if dead_node in self.node.routing_table:
+            del self.node.routing_table[dead_node]
+
+        # Eliminar referencias al nodo muerto desde cualquier otro nodo
+        for node in list(self.node.routing_table.keys()):
+            if dead_node in self.node.routing_table[node]:
+                del self.node.routing_table[node][dead_node]
+
+        # Limpiar nodos que se queden sin vecinos
+        for node in list(self.node.routing_table.keys()):
+            if not self.node.routing_table[node]:
+                self.node.routing_table[node] = {}
+
+        self.node.logger.info(
+            f"Tabla actualizada después de muerte de {dead_node}:\n"
+            f"{json.dumps(self.node.routing_table, indent=2)}"
+        )
+
+        # Propagar la información de muerte a todos los vecinos excepto al remitente
+        self._propagate_node_death(dead_node, exclude_neighbor=from_node)
+
+    def _propagate_node_death(self, dead_node, exclude_neighbor=None):
+        """Propagar información de que un nodo ha muerto a todos los vecinos"""
+        if self.node.node_id not in self.node.routing_table:
+            return
+
+        for neighbor, data in self.node.routing_table[self.node.node_id].items():
+            if neighbor == exclude_neighbor:
+                continue
+
+            # Enviar mensaje indicando que el nodo ha muerto (usamos hops = -1 para indicar muerte)
+            message = {
+                "type": "message",
+                "from": self.node.node_id,
+                "to": neighbor,
+                "hops": -1  # Indicador de que el nodo ha muerto
+            }
+            
+            self.node.logger.info(f"Propagando muerte de {dead_node} a {neighbor}")
+            asyncio.create_task(self.node.send_message(message, neighbor))
 
     async def start(self):
         """Iniciar el algoritmo LSR"""
@@ -156,15 +206,16 @@ class SimpleLSR:
             if not self.node.routing_table[node]:  # Diccionario vacío
                 self.node.routing_table[node] = {}
 
-        # logging
+        # logging y propagación de información de nodos muertos
         if expired_nodes:
             self.node.logger.info(
                 f"Nodos eliminados por timeout: {expired_nodes}\n"
                 f"Tabla actual:\n{json.dumps(self.node.routing_table, indent=2)}"
             )
-            self._propagate_routing_info()
-
-
+            
+            # Propagar información de cada nodo muerto a todos los vecinos
+            for dead_node in expired_nodes:
+                self._propagate_node_death(dead_node)
 
     def _propagate_routing_info(self):
         """Propagar información de routing a vecinos"""
