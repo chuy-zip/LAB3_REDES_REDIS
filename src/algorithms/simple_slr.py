@@ -1,15 +1,18 @@
 import asyncio
 import time
 import json
+from src.algorithms.dijkstra import Dijkstra
 
 class SimpleLSR:
     def __init__(self):
         self.node = None
         self.running = False
         self.seen_messages = set()
+        self.dijkstra = Dijkstra()
 
     def set_node(self, node):
         self.node = node
+        self.dijkstra.set_node(node)
 
     def handle_message(self, message):
         """Manejar mensajes recibidos"""
@@ -107,6 +110,8 @@ class SimpleLSR:
 
         self._propagate_routing_info()
 
+        dijkstra_task = asyncio.create_task(self.dijkstra.start())
+
         # Tarea para enviar hellos periódicamente
         async def hello_task():
             while self.running:
@@ -190,3 +195,4 @@ class SimpleLSR:
 
     def shutdown(self):
         self.running = False
+        self.dijkstra.shutdown()
